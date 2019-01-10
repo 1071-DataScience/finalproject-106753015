@@ -63,14 +63,17 @@ Some pictures we created for exploring data more easily.
 - dirty  
 Remain codes that we wrote during final project, most of them are dirty T.T
 
+#### modeling
+We use `Naive Bayes` as our classification model algorithm.
 
-* Which method do you use?
 * What is a null model for comparison?
 * How do your perform evaluation? ie. Cross-validation, or extra separated data
 
 ### results
 
-* Which metric do you use 
-  * precision, recall, R-square
+![best result](/best.png)
+
+We use `recall` as metric: right cuisine that our model predict / all true cuisine.
+
 * Is your improvement significant?
 * What is the challenge part of your project?
