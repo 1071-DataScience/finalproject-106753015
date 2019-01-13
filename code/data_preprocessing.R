@@ -1,9 +1,28 @@
-library(stringr)
-library(jsonlite)
-library(DescTools)
+# include
+tryCatch({
+  library('argparse')
+}, error = function(e) {
+  cat('You need to install "argparse" package before running this code.')
+  quit()
+})
+
+tryCatch({
+  library('stringr')
+}, error = function(e) {
+  cat('You need to install "stringr" package before running this code.')
+  quit()
+})
+
+tryCatch({
+  library('jsonlite')
+}, error = function(e) {
+  cat('You need to install "jsonlite" package before running this code.')
+  quit()
+})
 
 # functions
 trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+
 handle_string <- function(str) {
   str <- iconv(str, to='ASCII')
   
@@ -49,10 +68,45 @@ handle_string <- function(str) {
   str
 }
 
+init_parser <- function()
+{
+  parser <- ArgumentParser(description='Data Preprocessing')
+  parser$add_argument('--trainin', type="character", required=TRUE,
+                      help='your train.json file')
+  parser$add_argument('--testin', type="character", required=TRUE,
+                      help='your test.json file')
+  parser$add_argument('--trainout', type='character', required=TRUE,
+                      help='your output train rdata file')
+  parser$add_argument('--testout', type='character', required=TRUE,
+                      help='your output test rdata file')
+  parser$add_argument('--ingth', type='integer', required=FALSE, default=0, choices=c(0:10),
+                      help='your ingredient used times threshold')
+  parser
+}
+
+parse_args <- function(parser, args)
+{
+  tryCatch({
+    args <- parser$parse_args(args)
+  }, error = function(e) {
+      parser$print_help()
+      quit()
+  })
+}
+
+# main
+parser <- init_parser()
+args <- commandArgs(trailingOnly=TRUE)
+args <- parse_args(parser, args)
+
+train_file <- gsub('\\\\', '/', args$trainin)
+test_file <- gsub('\\\\', '/', args$testin)
+train_out_file <- gsub('\\\\', '/', args$trainout)
+test_out_file <- gsub('\\\\', '/', args$testout)
+
 # Preprocess train data
-train_json <- fromJSON('data/train.json')
-# backup_train_json <- train_json
-# train_json <- backup_train_json
+print('Preprocessing train data...')
+train_json <- fromJSON(train_file)
 all_ids <- c()
 all_cuisines <- c()
 all_ingredients <- c()
@@ -94,44 +148,18 @@ for(i in 1:rows) {
 head_df <- data.frame(id=all_ids, cuisine=all_cuisines, ingredient_num=all_ingredient_num)
 ingredient_df <- as.data.frame(ingredient_matrix)
 colnames(ingredient_df) <- all_ingredients
-ingredient_df_bak <- ingredient_df
 
-for(i in 1:10) {
-  keep_cols <- ingredient_total >= i
-  ingredient_df <- ingredient_df[keep_cols]
-  train_df <- cbind(head_df, ingredient_df)
-  train_df$`7.up` <- NULL
-  save(train_df, file=sprintf('data/train_%d.Rdata', i))
-  ingredient_df <- ingredient_df_bak
-}
-
-
-
-# calculate entropy
-# all_ingredients <- colnames(train_df[-c(1,2)])
-# all_cuisines <- train_df$cuisine
-# drop_ingredients <- c()
-# for(i in a) {
-#   all_use_rate <- c()
-#   for(j in unique(all_cuisines)) {
-#     total <- length(train_df[train_df$cuisine == j,]$cuisine)
-#     use_rate <- sum(train_df[train_df$cuisine == j,][[i]])/total
-#     all_use_rate <- c(all_use_rate, use_rate)
-#   }
-#   entropy <- Entropy(all_use_rate)
-#   if(entropy > 3.8) {
-#     print(i)
-#     print(entropy)
-#     drop_ingredients <- c(drop_ingredients, i)
-#   }
-# }
+keep_cols <- ingredient_total >= args$ingth
+ingredient_df <- ingredient_df[keep_cols]
+train_df <- cbind(head_df, ingredient_df)
+train_df$`7.up` <- NULL
+save(train_df, file=train_out_file)
 
 
 
 # Preprocess test data
-test_json <- fromJSON('data/test.json')
-backup_test_json <- test_json
-# test_json <- backup_test_json
+print('Preprocessing test data...')
+test_json <- fromJSON(test_file)
 all_ids <- c()
 rows <- dim(test_json)[[1]]
 
@@ -166,4 +194,4 @@ ingredient_df <- as.data.frame(ingredient_matrix)
 colnames(ingredient_df) <- all_ingredients
 test_df <- cbind(head_df, ingredient_df)
 
-save(test_df, file='data/test.Rdata')
+save(test_df, file=test_out_file)

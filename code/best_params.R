@@ -1,14 +1,59 @@
-library(e1071)
+# include
+tryCatch({
+  library('argparse')
+}, error = function(e) {
+  cat('You need to install "argparse" package before running this code.')
+  quit()
+})
 
-best_params <- c(5, '3.8', 30)
+tryCatch({
+  library('e1071')
+}, error = function(e) {
+  cat('You need to install "e1071" package before running this code.')
+  quit()
+})
 
-k <- 5
-m <- '3.8'
-p <- 30
+# function
+init_parser <- function()
+{
+  parser <- ArgumentParser(description='Best Parameter')
+  parser$add_argument('--test', type="character", required=TRUE,
+                      help='your test.Rdata file')
+  parser$add_argument('--ingth', type='integer', required=TRUE, choices=c(1:10),
+                      help='your ingredient used times threshold')
+  parser$add_argument('--entropy', type='character', required=TRUE, choices=c('3.5','3.8','4.0', '4.2'),
+                      help='entropy threshold')
+  parser$add_argument('--resth', type='integer', required=TRUE, choices=c(25, 30),
+                      help='your recipes used ingredients amount threshold')
+  parser$add_argument('--output', type='character', required=TRUE,
+                      help='your submit output csv file')
+  parser
+}
 
-load(sprintf('data/train_%d.Rdata', k))
+parse_args <- function(parser, args)
+{
+  tryCatch({
+    args <- parser$parse_args(args)
+  }, error = function(e) {
+    parser$print_help()
+    quit()
+  })
+}
+
+# main
+parser <- init_parser()
+args <- commandArgs(trailingOnly=TRUE)
+args <- parse_args(parser, args)
+
+k <- args$ingth
+m <- args$entropy
+p <- args$resth
+test_file <- gsub('\\\\', '/', args$test)
+submit_file <- gsub('\\\\', '/', args$submit)
+
+load(sprintf('data/input format/train_%d.Rdata', k))
 raw_train_df <- train_df
-drop_ingredients <- as.vector(read.csv(sprintf('data/txt/drop_e%s.txt', m), header=FALSE)$V1)
+drop_ingredients <- as.vector(read.csv(sprintf('data/entropy/drop_e%s.txt', m), header=FALSE)$V1)
 print(sprintf('Least ingredient used times: %d, Entropy: %s, Most recipe ingredients num: %d', k, m, p))
 train_df <- raw_train_df
 train_df <- train_df[(train_df$ingredient_num > 2 & train_df$ingredient_num < p),]
@@ -43,8 +88,8 @@ test_accuracy <- test_accuracy + (test_compare / length(test_labels))
 print(sprintf('test accuracy: %f', test_accuracy))
 gc()
 
-load('data/test.Rdata')
+load(test_file)
 test_df <- test_df[,!(names(test_df) %in% drop_ingredients)]
 final_pred <- predict(model, test_df[-c(1)])
 final_df <- data.frame(id=test_df$id, cuisine=final_pred)
-write.table(final_df, 'data/submit.csv', quote=FALSE, sep=',', row.names=FALSE)
+write.table(final_df, submit_file, quote=FALSE, sep=',', row.names=FALSE)

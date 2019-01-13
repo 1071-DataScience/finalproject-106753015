@@ -1,5 +1,9 @@
-# library(randomForest)
-library(e1071)
+tryCatch({
+  library('e1071')
+}, error = function(e) {
+  cat('You need to install "e1071" package before running this code.')
+  quit()
+})
 
 best_model <- ''
 best_test_accuracy <- 0
@@ -7,10 +11,10 @@ best_params <- c()
 n <- 10
 
 for(k in 4:10) {
-  load(sprintf('data/train_%d.Rdata', k))
+  load(sprintf('data/input format/train_%d.Rdata', k))
   raw_train_df <- train_df
   for(m in c("3.5", "3.8", "4.0", "4.2")) {
-    drop_ingredients <- as.vector(read.csv(sprintf('data/txt/drop_e%s.txt', m), header=FALSE)$V1)
+    drop_ingredients <- as.vector(read.csv(sprintf('data/entropy/drop_e%s.txt', m), header=FALSE)$V1)
     for(p in c(25, 30)) {
       print(sprintf('Least ingredient used times: %d, Entropy: %s, Most recipe ingredients num: %d', k, m, p))
       train_df <- raw_train_df
@@ -36,9 +40,7 @@ for(k in 4:10) {
         test_labels <- test_set$cuisine
 
         gc()
-        model <- naiveBayes(cuisine~., data=train_set[-c(1, 3)]) # 0.72928
-        # model <- svm(cuisine~., data=train_set[-c(1)]) # 0.31
-        # model <- randomForest(cuisine~., data=train_set[-c(1)], importance=TRUE, proximity=TRUE, ntree=10, mtry=1000, do.trace=1) # 0.62
+        model <- naiveBayes(cuisine~., data=train_set[-c(1, 3)])
 
         gc()
         train_pred <- predict(model, train_set[-c(1,2,3)])
@@ -93,9 +95,3 @@ for(k in 4:10) {
 
 print(best_params)
 print(best_test_accuracy)
-
-load('data/test.Rdata')
-test_df <- test_df[,!(names(test_df) %in% drop_ingredients)]
-final_pred <- predict(model, test_df[-c(1)])
-final_df <- data.frame(id=test_df$id, cuisine=final_pred)
-write.table(final_df, 'data/submit.csv', quote=FALSE, sep=',', row.names=FALSE)
