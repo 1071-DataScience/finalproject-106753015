@@ -19,7 +19,7 @@ init_parser <- function()
   parser <- ArgumentParser(description='Entropy')
   parser$add_argument('--train', type="character", required=TRUE,
                       help='your train Rdata file')
-  parser$add_argument('--entropy', type='double', required=TRUE, choices=c('3.5', '3.8', '4.0', '4.2'),
+  parser$add_argument('--entropy', type='double', required=TRUE, choices=c(3.5, 3.8, 4.0, 4.2),
                       help='entropy threshold')
   parser$add_argument('--output', type="character", required=TRUE,
                       help='your entropy output file')
